@@ -1,0 +1,22 @@
+#!/bin/sh
+set -e
+
+echo "Running pre-commit checks..."
+
+# Run go vet
+echo "  go vet..."
+go vet ./...
+
+# Run golangci-lint if available
+if command -v golangci-lint >/dev/null 2>&1; then
+    echo "  golangci-lint..."
+    golangci-lint run ./...
+else
+    echo "  golangci-lint not installed, skipping (install: https://golangci-lint.run/docs/welcome/install/)"
+fi
+
+# Run tests (short mode for speed)
+echo "  go test (short)..."
+go test ./... -short -count=1
+
+echo "Pre-commit checks passed."

@@ -33,6 +33,7 @@ type Runner struct {
 	config  RunnerConfig
 	cmd     *exec.Cmd
 	logFile *os.File
+	done    chan struct{} // closed when the process exits
 }
 
 // NewRunner creates a new Runner.
@@ -41,6 +42,9 @@ func NewRunner(cfg RunnerConfig) *Runner {
 }
 
 // Start launches the process.
+// Child processes are intentionally detached and survive CLI exit so that
+// development servers keep running after the portree command returns.
+// Use `portree down` to stop them.
 func (r *Runner) Start() (int, error) {
 	if r.cmd != nil && r.cmd.Process != nil {
 		if r.IsRunning() {
@@ -67,13 +71,23 @@ func (r *Runner) Start() (int, error) {
 	r.cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	r.cmd.Env = r.buildEnv()
 
+	// Initialize the done channel before Start so that Stop can never
+	// encounter a nil channel, even if a panic occurs between Start and
+	// the goroutine launch.
+	r.done = make(chan struct{})
+
 	if err := r.cmd.Start(); err != nil {
-		f.Close()
+		close(r.done)
+		_ = f.Close()
 		return 0, fmt.Errorf("starting %s: %w", r.config.ServiceName, err)
 	}
 
-	// Detach: don't wait in this goroutine. The process runs independently.
-	go func() { _ = r.cmd.Wait() }()
+	// Track process exit via a single Wait call to avoid the race of calling
+	// Wait() twice on the same exec.Cmd.
+	go func() {
+		_ = r.cmd.Wait()
+		close(r.done)
+	}()
 
 	return r.cmd.Process.Pid, nil
 }
@@ -81,7 +95,7 @@ func (r *Runner) Start() (int, error) {
 // Stop sends SIGTERM then SIGKILL to the process group.
 func (r *Runner) Stop() error {
 	if r.logFile != nil {
-		defer r.logFile.Close()
+		defer func() { _ = r.logFile.Close() }()
 	}
 
 	if r.cmd == nil || r.cmd.Process == nil {
@@ -98,21 +112,21 @@ func (r *Runner) Stop() error {
 	// Send SIGTERM to the process group.
 	_ = syscall.Kill(-pgid, syscall.SIGTERM)
 
-	// Wait for process to exit.
-	done := make(chan struct{})
-	go func() {
-		_ = r.cmd.Wait()
-		close(done)
-	}()
-
+	// Reuse the done channel from Start instead of calling Wait again.
 	select {
-	case <-done:
+	case <-r.done:
 		return nil
 	case <-time.After(stopTimeout):
 		// Force kill the process group.
 		_ = syscall.Kill(-pgid, syscall.SIGKILL)
 		return nil
 	}
+}
+
+// Done returns a channel that is closed when the process exits.
+// Returns nil if Start has not been called yet.
+func (r *Runner) Done() <-chan struct{} {
+	return r.done
 }
 
 // StopPID stops a process by PID (used for stale processes from state).

@@ -4,7 +4,7 @@ COMMIT  := $(shell git rev-parse --short HEAD 2>/dev/null || echo "none")
 DATE    := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 LDFLAGS := -ldflags "-s -w -X github.com/fairy-pitta/portree/cmd.version=$(VERSION) -X github.com/fairy-pitta/portree/cmd.commit=$(COMMIT) -X github.com/fairy-pitta/portree/cmd.date=$(DATE)"
 
-.PHONY: build test lint clean install
+.PHONY: build test lint clean install setup-hooks
 
 build:
 	go build $(LDFLAGS) -o $(APP_NAME) .
@@ -31,5 +31,9 @@ fmt:
 
 vet:
 	go vet ./...
+
+setup-hooks:
+	git config core.hooksPath .githooks
+	@echo "Git hooks configured to use .githooks/"
 
 all: fmt vet lint test build

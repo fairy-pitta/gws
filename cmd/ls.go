@@ -54,7 +54,7 @@ var lsCmd = &cobra.Command{
 		sort.Strings(serviceNames)
 
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-		fmt.Fprintln(w, "WORKTREE\tSERVICE\tPORT\tSTATUS\tPID")
+		_, _ = fmt.Fprintln(w, "WORKTREE\tSERVICE\tPORT\tSTATUS\tPID")
 
 		for _, tree := range trees {
 			if tree.IsBare {
@@ -85,7 +85,7 @@ var lsCmd = &cobra.Command{
 					}
 				}
 
-				fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", branch, svcName, portStr, statusStr, pidStr)
+				_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", branch, svcName, portStr, statusStr, pidStr)
 			}
 		}
 
