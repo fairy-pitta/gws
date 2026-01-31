@@ -74,7 +74,7 @@ var lsCmd = &cobra.Command{
 }
 
 func buildLsEntries(trees []git.Worktree, serviceNames []string, st *state.State) []lsEntry {
-	var entries []lsEntry
+	entries := make([]lsEntry, 0)
 	for _, tree := range trees {
 		if tree.IsBare {
 			continue
