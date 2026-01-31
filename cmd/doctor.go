@@ -171,7 +171,7 @@ func checkStaleState(root string) checkResult {
 	var staleDetails []string
 	for branch, services := range st.Services {
 		for svcName, ss := range services {
-			if ss.Status == "running" && ss.PID > 0 && !process.IsProcessRunning(ss.PID) {
+			if ss.Status == state.StatusRunning && ss.PID > 0 && !process.IsProcessRunning(ss.PID) {
 				staleDetails = append(staleDetails, fmt.Sprintf("%s/%s (PID %d)", branch, svcName, ss.PID))
 			}
 		}

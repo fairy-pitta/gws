@@ -17,7 +17,7 @@ var openCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cwd, err := os.Getwd()
 		if err != nil {
-			return err
+			return fmt.Errorf("getting current directory: %w", err)
 		}
 
 		tree, err := git.CurrentWorktree(cwd)

@@ -148,8 +148,8 @@ func TestManagerStartStopServices(t *testing.T) {
 	if ss == nil {
 		t.Fatal("expected service state to be persisted")
 	}
-	if ss.Status != "running" {
-		t.Errorf("state status = %q, want %q", ss.Status, "running")
+	if ss.Status != state.StatusRunning {
+		t.Errorf("state status = %q, want %q", ss.Status, state.StatusRunning)
 	}
 	if ss.PID != r.PID {
 		t.Errorf("state PID = %d, want %d", ss.PID, r.PID)
@@ -189,8 +189,8 @@ func TestManagerStartStopServices(t *testing.T) {
 	if ss == nil {
 		t.Fatal("expected service state after stop")
 	}
-	if ss.Status != "stopped" {
-		t.Errorf("state status after stop = %q, want %q", ss.Status, "stopped")
+	if ss.Status != state.StatusStopped {
+		t.Errorf("state status after stop = %q, want %q", ss.Status, state.StatusStopped)
 	}
 }
 
@@ -237,8 +237,8 @@ func TestManagerCleanStale(t *testing.T) {
 	if ss == nil {
 		t.Fatal("expected service state after cleanStale")
 	}
-	if ss.Status != "stopped" {
-		t.Errorf("state status after cleanStale = %q, want %q", ss.Status, "stopped")
+	if ss.Status != state.StatusStopped {
+		t.Errorf("state status after cleanStale = %q, want %q", ss.Status, state.StatusStopped)
 	}
 }
 

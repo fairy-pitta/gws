@@ -24,7 +24,7 @@ var downCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cwd, err := os.Getwd()
 		if err != nil {
-			return err
+			return fmt.Errorf("getting current directory: %w", err)
 		}
 
 		if downService != "" {
@@ -36,7 +36,7 @@ var downCmd = &cobra.Command{
 		stateDir := filepath.Join(repoRoot, ".portree")
 		store, err := state.NewFileStore(stateDir)
 		if err != nil {
-			return err
+			return fmt.Errorf("creating state store: %w", err)
 		}
 
 		registry := port.NewRegistry(store, cfg)

@@ -8,6 +8,7 @@ import (
 	"sort"
 	"syscall"
 
+	"github.com/fairy-pitta/portree/internal/logging"
 	"github.com/fairy-pitta/portree/internal/proxy"
 	"github.com/fairy-pitta/portree/internal/state"
 	"github.com/spf13/cobra"
@@ -26,7 +27,7 @@ var proxyStartCmd = &cobra.Command{
 		stateDir := filepath.Join(repoRoot, ".portree")
 		store, err := state.NewFileStore(stateDir)
 		if err != nil {
-			return err
+			return fmt.Errorf("creating state store: %w", err)
 		}
 
 		resolver := proxy.NewResolver(cfg, store)
@@ -43,17 +44,19 @@ var proxyStartCmd = &cobra.Command{
 		}
 
 		// Update state.
-		_ = store.WithLock(func() error {
+		if err := store.WithLock(func() error {
 			st, e := store.Load()
 			if e != nil {
 				return e
 			}
 			st.Proxy = state.ProxyState{
 				PID:    os.Getpid(),
-				Status: "running",
+				Status: state.StatusRunning,
 			}
 			return store.Save(st)
-		})
+		}); err != nil {
+			logging.Warn("failed to save proxy state: %v", err)
+		}
 
 		fmt.Println("Proxy started:")
 		// Sort for consistent output.
@@ -75,16 +78,20 @@ var proxyStartCmd = &cobra.Command{
 		<-sig
 
 		fmt.Println("\nStopping proxy...")
-		_ = server.Stop()
+		if err := server.Stop(); err != nil {
+			logging.Warn("error stopping proxy server: %v", err)
+		}
 
-		_ = store.WithLock(func() error {
+		if err := store.WithLock(func() error {
 			st, e := store.Load()
 			if e != nil {
 				return e
 			}
-			st.Proxy = state.ProxyState{Status: "stopped"}
+			st.Proxy = state.ProxyState{Status: state.StatusStopped}
 			return store.Save(st)
-		})
+		}); err != nil {
+			logging.Warn("failed to update proxy state: %v", err)
+		}
 
 		fmt.Println("Proxy stopped.")
 		return nil
@@ -98,30 +105,35 @@ var proxyStopCmd = &cobra.Command{
 		stateDir := filepath.Join(repoRoot, ".portree")
 		store, err := state.NewFileStore(stateDir)
 		if err != nil {
-			return err
+			return fmt.Errorf("creating state store: %w", err)
 		}
 
 		var st *state.State
-		_ = store.WithLock(func() error {
-			st, err = store.Load()
-			return err
-		})
+		if err := store.WithLock(func() error {
+			var e error
+			st, e = store.Load()
+			return e
+		}); err != nil {
+			return fmt.Errorf("loading proxy state: %w", err)
+		}
 
-		if st.Proxy.PID > 0 && st.Proxy.Status == "running" {
+		if st.Proxy.PID > 0 && st.Proxy.Status == state.StatusRunning {
 			// Send SIGTERM to the proxy process.
 			proc, err := os.FindProcess(st.Proxy.PID)
 			if err == nil {
 				_ = proc.Signal(syscall.SIGTERM)
 			}
 
-			_ = store.WithLock(func() error {
+			if err := store.WithLock(func() error {
 				st, e := store.Load()
 				if e != nil {
 					return e
 				}
-				st.Proxy = state.ProxyState{Status: "stopped"}
+				st.Proxy = state.ProxyState{Status: state.StatusStopped}
 				return store.Save(st)
-			})
+			}); err != nil {
+				logging.Warn("failed to update proxy state: %v", err)
+			}
 
 			fmt.Println("Proxy stopped.")
 		} else {

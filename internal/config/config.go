@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/BurntSushi/toml"
 )
@@ -134,6 +135,24 @@ func (c *Config) Validate() error {
 			}
 		}
 	}
+
+	// Check for port range overlaps between services.
+	svcNames := make([]string, 0, len(c.Services))
+	for name := range c.Services {
+		svcNames = append(svcNames, name)
+	}
+	sort.Strings(svcNames)
+	for i := 0; i < len(svcNames); i++ {
+		for j := i + 1; j < len(svcNames); j++ {
+			a := c.Services[svcNames[i]]
+			b := c.Services[svcNames[j]]
+			if a.PortRange.Min <= b.PortRange.Max && b.PortRange.Min <= a.PortRange.Max {
+				return fmt.Errorf("services %q and %q have overlapping port ranges [%d-%d] and [%d-%d]",
+					svcNames[i], svcNames[j], a.PortRange.Min, a.PortRange.Max, b.PortRange.Min, b.PortRange.Max)
+			}
+		}
+	}
+
 	return nil
 }
 

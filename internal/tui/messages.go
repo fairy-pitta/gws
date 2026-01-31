@@ -20,7 +20,7 @@ type ServiceRow struct {
 	Slug    string
 	Service string
 	Port    int
-	Status  string // "running" or "stopped"
+	Status  string // state.StatusRunning or state.StatusStopped
 	PID     int
 }
 

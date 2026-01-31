@@ -33,14 +33,14 @@ func TestPortKey(t *testing.T) {
 func TestSetAndGetServiceState(t *testing.T) {
 	t.Run("set and get", func(t *testing.T) {
 		st := emptyState()
-		ss := &ServiceState{Port: 3100, PID: 1234, Status: "running"}
+		ss := &ServiceState{Port: 3100, PID: 1234, Status: StatusRunning}
 		SetServiceState(st, "main", "web", ss)
 
 		got := GetServiceState(st, "main", "web")
 		if got == nil {
 			t.Fatal("GetServiceState returned nil")
 		}
-		if got.Port != 3100 || got.PID != 1234 || got.Status != "running" {
+		if got.Port != 3100 || got.PID != 1234 || got.Status != StatusRunning {
 			t.Errorf("GetServiceState = %+v, want port=3100 pid=1234 status=running", got)
 		}
 	})
@@ -106,8 +106,8 @@ func TestRunningServiceState(t *testing.T) {
 	if ss.PID != 1234 {
 		t.Errorf("PID = %d, want 1234", ss.PID)
 	}
-	if ss.Status != "running" {
-		t.Errorf("Status = %q, want %q", ss.Status, "running")
+	if ss.Status != StatusRunning {
+		t.Errorf("Status = %q, want %q", ss.Status, StatusRunning)
 	}
 
 	ts, err := time.Parse(time.RFC3339, ss.StartedAt)
@@ -125,8 +125,8 @@ func TestStoppedServiceState(t *testing.T) {
 	if ss.Port != 3100 {
 		t.Errorf("Port = %d, want 3100", ss.Port)
 	}
-	if ss.Status != "stopped" {
-		t.Errorf("Status = %q, want %q", ss.Status, "stopped")
+	if ss.Status != StatusStopped {
+		t.Errorf("Status = %q, want %q", ss.Status, StatusStopped)
 	}
 	if ss.PID != 0 {
 		t.Errorf("PID = %d, want 0", ss.PID)
@@ -178,7 +178,7 @@ func TestFileStoreSaveAndLoad(t *testing.T) {
 	}
 
 	st := emptyState()
-	SetServiceState(st, "main", "web", &ServiceState{Port: 3100, PID: 42, Status: "running", StartedAt: "2025-01-01T00:00:00Z"})
+	SetServiceState(st, "main", "web", &ServiceState{Port: 3100, PID: 42, Status: StatusRunning, StartedAt: "2025-01-01T00:00:00Z"})
 	SetPortAssignment(st, "main", "web", 3100)
 	SetPortAssignment(st, "feature/auth", "api", 8150)
 
@@ -195,7 +195,7 @@ func TestFileStoreSaveAndLoad(t *testing.T) {
 	if ss == nil {
 		t.Fatal("loaded state missing main/web service")
 	}
-	if ss.Port != 3100 || ss.PID != 42 || ss.Status != "running" {
+	if ss.Port != 3100 || ss.PID != 42 || ss.Status != StatusRunning {
 		t.Errorf("loaded service state = %+v", ss)
 	}
 

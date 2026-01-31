@@ -29,7 +29,7 @@ var lsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cwd, err := os.Getwd()
 		if err != nil {
-			return err
+			return fmt.Errorf("getting current directory: %w", err)
 		}
 
 		trees, err := git.ListWorktrees(cwd)
@@ -41,7 +41,7 @@ var lsCmd = &cobra.Command{
 		stateDir := filepath.Join(repoRoot, ".portree")
 		store, err := state.NewFileStore(stateDir)
 		if err != nil {
-			return err
+			return fmt.Errorf("creating state store: %w", err)
 		}
 
 		var st *state.State
@@ -91,17 +91,17 @@ func buildLsEntries(trees []git.Worktree, serviceNames []string, st *state.State
 			e := lsEntry{
 				Worktree: branch,
 				Service:  svcName,
-				Status:   "stopped",
+				Status:   state.StatusStopped,
 			}
 
 			ss := state.GetServiceState(st, tree.Branch, svcName)
 			if ss != nil {
 				e.Port = ss.Port
 				if ss.PID > 0 && process.IsProcessRunning(ss.PID) {
-					e.Status = "running"
+					e.Status = state.StatusRunning
 					e.PID = ss.PID
-				} else if ss.Status == "running" && ss.PID > 0 {
-					e.Status = "stopped" // stale
+				} else if ss.Status == state.StatusRunning && ss.PID > 0 {
+					e.Status = state.StatusStopped // stale
 				} else {
 					e.Status = ss.Status
 				}

@@ -53,12 +53,12 @@ func (r *Runner) Start() (int, error) {
 	}
 
 	// Ensure log directory exists.
-	if err := os.MkdirAll(r.config.LogDir, 0755); err != nil {
+	if err := os.MkdirAll(r.config.LogDir, 0700); err != nil {
 		return 0, fmt.Errorf("creating log dir: %w", err)
 	}
 
 	logPath := filepath.Join(r.config.LogDir, fmt.Sprintf("%s.%s.log", r.config.BranchSlug, r.config.ServiceName))
-	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		return 0, fmt.Errorf("opening log file: %w", err)
 	}
@@ -138,11 +138,14 @@ func StopPID(pid int) error {
 
 	_ = syscall.Kill(-pgid, syscall.SIGTERM)
 
-	// Wait briefly then force kill.
-	time.Sleep(3 * time.Second)
-	if IsProcessRunning(pid) {
-		_ = syscall.Kill(-pgid, syscall.SIGKILL)
+	// Poll briefly for process exit, then force kill.
+	for i := 0; i < 30; i++ {
+		time.Sleep(100 * time.Millisecond)
+		if !IsProcessRunning(pid) {
+			return nil
+		}
 	}
+	_ = syscall.Kill(-pgid, syscall.SIGKILL)
 	return nil
 }
 

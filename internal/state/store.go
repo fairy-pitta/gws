@@ -7,13 +7,24 @@ import (
 	"path/filepath"
 	"syscall"
 	"time"
+
+	"github.com/fairy-pitta/portree/internal/logging"
 )
+
+const (
+	// StatusRunning indicates a running service or proxy.
+	StatusRunning = "running"
+	// StatusStopped indicates a stopped service or proxy.
+	StatusStopped = "stopped"
+)
+
+const lockTimeout = 10 * time.Second
 
 // ServiceState represents the runtime state of a single service in a worktree.
 type ServiceState struct {
 	Port      int    `json:"port"`
 	PID       int    `json:"pid"`
-	Status    string `json:"status"` // "running", "stopped"
+	Status    string `json:"status"` // StatusRunning, StatusStopped
 	StartedAt string `json:"started_at"`
 }
 
@@ -41,7 +52,7 @@ type FileStore struct {
 
 // NewFileStore creates a new FileStore. The dir is typically .portree/ under the main worktree root.
 func NewFileStore(dir string) (*FileStore, error) {
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0700); err != nil {
 		return nil, fmt.Errorf("creating state directory: %w", err)
 	}
 	return &FileStore{
@@ -63,6 +74,7 @@ func (s *FileStore) Load() (*State, error) {
 
 	var st State
 	if err := json.Unmarshal(data, &st); err != nil {
+		logging.Warn("corrupt state file, starting fresh: %v", err)
 		return emptyState(), nil
 	}
 	if st.Services == nil {
@@ -80,19 +92,26 @@ func (s *FileStore) Save(st *State) error {
 	if err != nil {
 		return fmt.Errorf("marshaling state: %w", err)
 	}
-	return os.WriteFile(s.filePath, data, 0644)
+	return os.WriteFile(s.filePath, data, 0600)
 }
 
 // WithLock executes fn while holding an exclusive file lock.
 func (s *FileStore) WithLock(fn func() error) error {
-	f, err := os.OpenFile(s.lockPath, os.O_CREATE|os.O_RDWR, 0644)
+	f, err := os.OpenFile(s.lockPath, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return fmt.Errorf("opening lock file: %w", err)
 	}
 	defer func() { _ = f.Close() }()
 
-	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
-		return fmt.Errorf("acquiring lock: %w", err)
+	deadline := time.Now().Add(lockTimeout)
+	for {
+		if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err == nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("acquiring lock: timed out after %v", lockTimeout)
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
 	defer func() { _ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN) }()
 
@@ -140,7 +159,7 @@ func RunningServiceState(port, pid int) *ServiceState {
 	return &ServiceState{
 		Port:      port,
 		PID:       pid,
-		Status:    "running",
+		Status:    StatusRunning,
 		StartedAt: time.Now().Format(time.RFC3339),
 	}
 }
@@ -149,7 +168,7 @@ func RunningServiceState(port, pid int) *ServiceState {
 func StoppedServiceState(port int) *ServiceState {
 	return &ServiceState{
 		Port:   port,
-		Status: "stopped",
+		Status: StatusStopped,
 	}
 }
 

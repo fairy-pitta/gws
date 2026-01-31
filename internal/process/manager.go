@@ -1,8 +1,10 @@
 package process
 
 import (
+	"fmt"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/fairy-pitta/portree/internal/config"
@@ -50,8 +52,8 @@ func (m *Manager) deleteRunner(key string) {
 	m.mu.Unlock()
 }
 
-// StartResult describes the outcome of starting a service.
-type StartResult struct {
+// ServiceResult describes the outcome of starting or stopping a service.
+type ServiceResult struct {
 	Branch  string
 	Service string
 	Port    int
@@ -61,8 +63,8 @@ type StartResult struct {
 
 // StartServices starts services for the given worktree.
 // If serviceFilter is non-empty, only that service is started.
-func (m *Manager) StartServices(tree *git.Worktree, serviceFilter string) []StartResult {
-	var results []StartResult
+func (m *Manager) StartServices(tree *git.Worktree, serviceFilter string) []ServiceResult {
+	var results []ServiceResult
 
 	services := m.targetServices(serviceFilter)
 
@@ -71,7 +73,7 @@ func (m *Manager) StartServices(tree *git.Worktree, serviceFilter string) []Star
 	for _, svcName := range services {
 		p, err := m.registry.AssignPort(tree.Branch, svcName)
 		if err != nil {
-			results = append(results, StartResult{
+			results = append(results, ServiceResult{
 				Branch: tree.Branch, Service: svcName, Err: err,
 			})
 			continue
@@ -105,6 +107,17 @@ func (m *Manager) StartServices(tree *git.Worktree, serviceFilter string) []Star
 			dir = filepath.Join(tree.Path, svc.Dir)
 		}
 
+		// Validate the resolved directory stays within the worktree root.
+		cleanDir := filepath.Clean(dir)
+		cleanRoot := filepath.Clean(tree.Path)
+		if cleanDir != cleanRoot && !strings.HasPrefix(cleanDir, cleanRoot+string(filepath.Separator)) {
+			results = append(results, ServiceResult{
+				Branch: tree.Branch, Service: svcName,
+				Err: fmt.Errorf("service directory %q resolves outside worktree root", svc.Dir),
+			})
+			continue
+		}
+
 		runner := NewRunner(RunnerConfig{
 			ServiceName:          svcName,
 			Branch:               tree.Branch,
@@ -119,7 +132,7 @@ func (m *Manager) StartServices(tree *git.Worktree, serviceFilter string) []Star
 		})
 
 		pid, err := runner.Start()
-		result := StartResult{
+		result := ServiceResult{
 			Branch: tree.Branch, Service: svcName, Port: p, PID: pid, Err: err,
 		}
 		results = append(results, result)
@@ -145,13 +158,13 @@ func (m *Manager) StartServices(tree *git.Worktree, serviceFilter string) []Star
 }
 
 // StopServices stops services for the given worktree.
-func (m *Manager) StopServices(tree *git.Worktree, serviceFilter string) []StartResult {
-	var results []StartResult
+func (m *Manager) StopServices(tree *git.Worktree, serviceFilter string) []ServiceResult {
+	var results []ServiceResult
 	services := m.targetServices(serviceFilter)
 
 	for _, svcName := range services {
 		key := tree.Branch + ":" + svcName
-		result := StartResult{Branch: tree.Branch, Service: svcName}
+		result := ServiceResult{Branch: tree.Branch, Service: svcName}
 
 		// Try runner first.
 		if runner, ok := m.getRunner(key); ok {
@@ -206,7 +219,7 @@ func (m *Manager) cleanStale(branch, service string) {
 			return err
 		}
 		ss := state.GetServiceState(st, branch, service)
-		if ss != nil && ss.Status == "running" && ss.PID > 0 && !IsProcessRunning(ss.PID) {
+		if ss != nil && ss.Status == state.StatusRunning && ss.PID > 0 && !IsProcessRunning(ss.PID) {
 			state.SetServiceState(st, branch, service, state.StoppedServiceState(ss.Port))
 			return m.store.Save(st)
 		}

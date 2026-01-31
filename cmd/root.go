@@ -52,7 +52,7 @@ var rootCmd = &cobra.Command{
 
 		cfg, err = config.Load(repoRoot)
 		if err != nil {
-			return err
+			return fmt.Errorf("loading config: %w", err)
 		}
 
 		logging.Verbose("loaded config with %d service(s)", len(cfg.Services))

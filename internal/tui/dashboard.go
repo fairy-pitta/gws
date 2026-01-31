@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/fairy-pitta/portree/internal/state"
 )
 
 // columns defines the table layout.
@@ -44,7 +46,7 @@ func renderTable(rows []ServiceRow, cursor int) string {
 		}
 
 		statusStr := statusStopped
-		if row.Status == "running" {
+		if row.Status == state.StatusRunning {
 			statusStr = statusRunning
 		}
 

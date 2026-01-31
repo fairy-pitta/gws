@@ -100,7 +100,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if e != nil {
 				return e
 			}
-			m.proxyRunning = st.Proxy.Status == "running" && st.Proxy.PID > 0 && process.IsProcessRunning(st.Proxy.PID)
+			m.proxyRunning = st.Proxy.Status == state.StatusRunning && st.Proxy.PID > 0 && process.IsProcessRunning(st.Proxy.PID)
 			return nil
 		}); err != nil {
 			logging.Warn("failed to load proxy state: %v", err)
@@ -237,12 +237,12 @@ func (m *Model) refreshStatus() tea.Msg {
 				row.Port = ss.Port
 				row.PID = ss.PID
 				if ss.PID > 0 && process.IsProcessRunning(ss.PID) {
-					row.Status = "running"
+					row.Status = state.StatusRunning
 				} else {
-					row.Status = "stopped"
+					row.Status = state.StatusStopped
 				}
 			} else {
-				row.Status = "stopped"
+				row.Status = state.StatusStopped
 			}
 
 			rows = append(rows, row)
@@ -307,7 +307,7 @@ func (m *Model) openSelected() tea.Msg {
 		return ActionResultMsg{Message: "No service selected"}
 	}
 
-	if row.Status != "running" {
+	if row.Status != state.StatusRunning {
 		return ActionResultMsg{Message: fmt.Sprintf("%s/%s is not running, start it first", row.Branch, row.Service), IsError: true}
 	}
 

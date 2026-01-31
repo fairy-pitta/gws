@@ -41,7 +41,7 @@ func (p *ProxyServer) Start(proxyPorts map[string]int) error {
 
 	for port := range ports {
 		srv := &http.Server{
-			Addr:    ":" + strconv.Itoa(port),
+			Addr:    "127.0.0.1:" + strconv.Itoa(port),
 			Handler: p.handler(port),
 		}
 
@@ -97,14 +97,19 @@ func (p *ProxyServer) handler(proxyPort int) http.Handler {
 
 		backendPort, err := p.resolver.Resolve(slug, proxyPort)
 		if err != nil {
-			slugs, _ := p.resolver.AvailableSlugs()
-			msg := fmt.Sprintf("portree: no worktree found for slug %q\nAvailable: %s",
-				slug, strings.Join(slugs, ", "))
+			msg := fmt.Sprintf("portree: no worktree found for slug %q", slug)
+			if slugs, err := p.resolver.AvailableSlugs(); err == nil && len(slugs) > 0 {
+				msg += fmt.Sprintf("\nAvailable: %s", strings.Join(slugs, ", "))
+			}
 			http.Error(w, msg, http.StatusNotFound)
 			return
 		}
 
-		target, _ := url.Parse(fmt.Sprintf("http://127.0.0.1:%d", backendPort))
+		target, err := url.Parse(fmt.Sprintf("http://127.0.0.1:%d", backendPort))
+		if err != nil {
+			http.Error(w, "portree: invalid backend URL", http.StatusInternalServerError)
+			return
+		}
 		proxy := &httputil.ReverseProxy{
 			Rewrite: func(pr *httputil.ProxyRequest) {
 				pr.SetURL(target)
