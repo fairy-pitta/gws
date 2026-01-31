@@ -22,9 +22,10 @@ type checkResult struct {
 }
 
 var doctorCmd = &cobra.Command{
-	Use:   "doctor",
-	Short: "Check environment and diagnose common issues",
-	Long:  "Runs a series of checks to verify that portree's dependencies and configuration are healthy.",
+	Use:         "doctor",
+	Short:       "Check environment and diagnose common issues",
+	Long:        "Runs a series of checks to verify that portree's dependencies and configuration are healthy.",
+	Annotations: map[string]string{"skipRepoDetection": "true"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var results []checkResult
 

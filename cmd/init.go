@@ -10,9 +10,10 @@ import (
 )
 
 var initCmd = &cobra.Command{
-	Use:   "init",
-	Short: "Initialize a .portree.toml configuration file",
-	Long:  "Creates a default .portree.toml in the current git repository root.",
+	Use:         "init",
+	Short:       "Initialize a .portree.toml configuration file",
+	Long:        "Creates a default .portree.toml in the current git repository root.",
+	Annotations: map[string]string{"skipRepoDetection": "true"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cwd, err := os.Getwd()
 		if err != nil {

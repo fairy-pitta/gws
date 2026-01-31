@@ -7,8 +7,9 @@ import (
 )
 
 var completionCmd = &cobra.Command{
-	Use:   "completion [bash|zsh|fish|powershell]",
-	Short: "Generate shell completion scripts",
+	Use:         "completion [bash|zsh|fish|powershell]",
+	Short:       "Generate shell completion scripts",
+	Annotations: map[string]string{"skipRepoDetection": "true"},
 	Long: `Generate shell completion scripts for portree.
 
 To load completions:

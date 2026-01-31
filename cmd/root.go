@@ -33,8 +33,8 @@ var rootCmd = &cobra.Command{
 			logging.SetLevel(logging.LevelQuiet)
 		}
 
-		// Skip repo/config detection for commands that don't need it.
-		if cmd.Name() == "init" || cmd.Name() == "version" || cmd.Name() == "completion" || cmd.Name() == "doctor" {
+		// Skip repo/config detection for commands that opt out.
+		if cmd.Annotations["skipRepoDetection"] == "true" {
 			return nil
 		}
 

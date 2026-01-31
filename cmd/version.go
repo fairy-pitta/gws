@@ -16,8 +16,9 @@ var (
 )
 
 var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Print the version of portree",
+	Use:         "version",
+	Short:       "Print the version of portree",
+	Annotations: map[string]string{"skipRepoDetection": "true"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		jsonFlag, _ := cmd.Flags().GetBool("json")
 		if jsonFlag {
