@@ -30,12 +30,12 @@ func TestLevels(t *testing.T) {
 		}
 	})
 
-	t.Run("quiet allows warn", func(t *testing.T) {
+	t.Run("quiet suppresses warn", func(t *testing.T) {
 		buf.Reset()
 		SetLevel(LevelQuiet)
-		Warn("visible")
-		if buf.Len() == 0 {
-			t.Error("expected warn output in quiet mode")
+		Warn("should not appear")
+		if buf.Len() != 0 {
+			t.Errorf("expected no warn output in quiet mode, got %q", buf.String())
 		}
 	})
 

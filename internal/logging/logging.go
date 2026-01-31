@@ -86,7 +86,7 @@ func Debug(format string, args ...any) {
 func Warn(format string, args ...any) {
 	std.mu.Lock()
 	defer std.mu.Unlock()
-	if std.level >= LevelQuiet {
+	if std.level > LevelQuiet {
 		_, _ = fmt.Fprintf(std.out, "warning: "+format+"\n", args...)
 	}
 }
