@@ -78,7 +78,7 @@ func (r *Runner) Start() (int, error) {
 
 	if err := r.cmd.Start(); err != nil {
 		close(r.done)
-		f.Close()
+		_ = f.Close()
 		return 0, fmt.Errorf("starting %s: %w", r.config.ServiceName, err)
 	}
 
@@ -95,7 +95,7 @@ func (r *Runner) Start() (int, error) {
 // Stop sends SIGTERM then SIGKILL to the process group.
 func (r *Runner) Stop() error {
 	if r.logFile != nil {
-		defer r.logFile.Close()
+		defer func() { _ = r.logFile.Close() }()
 	}
 
 	if r.cmd == nil || r.cmd.Process == nil {

@@ -129,7 +129,7 @@ func TestProxyServerStartDuplicatePort(t *testing.T) {
 	if err := proxy.Start(proxyPorts); err != nil {
 		t.Fatalf("Start() error: %v", err)
 	}
-	defer proxy.Stop()
+	defer func() { _ = proxy.Stop() }()
 
 	proxy.mu.Lock()
 	nServers := len(proxy.servers)
@@ -150,13 +150,13 @@ func TestHandlerResolvesToBackend(t *testing.T) {
 	// Start a dummy backend server
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "hello from backend")
+		_, _ = fmt.Fprint(w, "hello from backend")
 	}))
 	defer backend.Close()
 
 	// Parse the backend port
 	var backendPort int
-	fmt.Sscanf(backend.Listener.Addr().String(), "127.0.0.1:%d", &backendPort)
+	_, _ = fmt.Sscanf(backend.Listener.Addr().String(), "127.0.0.1:%d", &backendPort)
 
 	cfg := &config.Config{
 		Services: map[string]config.ServiceConfig{

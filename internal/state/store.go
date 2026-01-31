@@ -89,7 +89,7 @@ func (s *FileStore) WithLock(fn func() error) error {
 	if err != nil {
 		return fmt.Errorf("opening lock file: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
 		return fmt.Errorf("acquiring lock: %w", err)

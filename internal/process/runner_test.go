@@ -196,7 +196,7 @@ func TestRunnerStopBeforeStart(t *testing.T) {
 
 func TestRunnerDoubleStart(t *testing.T) {
 	r := newTestRunner(t, "sleep 60")
-	defer r.Stop()
+	defer func() { _ = r.Stop() }()
 
 	_, err := r.Start()
 	if err != nil {
