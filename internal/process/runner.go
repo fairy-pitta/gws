@@ -71,14 +71,19 @@ func (r *Runner) Start() (int, error) {
 	r.cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	r.cmd.Env = r.buildEnv()
 
+	// Initialize the done channel before Start so that Stop can never
+	// encounter a nil channel, even if a panic occurs between Start and
+	// the goroutine launch.
+	r.done = make(chan struct{})
+
 	if err := r.cmd.Start(); err != nil {
+		close(r.done)
 		f.Close()
 		return 0, fmt.Errorf("starting %s: %w", r.config.ServiceName, err)
 	}
 
 	// Track process exit via a single Wait call to avoid the race of calling
 	// Wait() twice on the same exec.Cmd.
-	r.done = make(chan struct{})
 	go func() {
 		_ = r.cmd.Wait()
 		close(r.done)

@@ -46,6 +46,55 @@ func TestWorktreeSlug(t *testing.T) {
 	}
 }
 
+func TestDetectSlugCollisions(t *testing.T) {
+	t.Run("no collisions", func(t *testing.T) {
+		trees := []Worktree{
+			{Path: "/a", Branch: "main"},
+			{Path: "/b", Branch: "feature/auth"},
+		}
+		got := DetectSlugCollisions(trees)
+		if len(got) != 0 {
+			t.Errorf("DetectSlugCollisions() = %v, want empty", got)
+		}
+	})
+
+	t.Run("collision", func(t *testing.T) {
+		trees := []Worktree{
+			{Path: "/a", Branch: "feature/auth"},
+			{Path: "/b", Branch: "feature-auth"},
+		}
+		got := DetectSlugCollisions(trees)
+		if len(got) != 1 {
+			t.Fatalf("DetectSlugCollisions() returned %d collisions, want 1", len(got))
+		}
+		branches, ok := got["feature-auth"]
+		if !ok {
+			t.Fatal("expected collision for slug 'feature-auth'")
+		}
+		if len(branches) != 2 {
+			t.Errorf("collision has %d branches, want 2", len(branches))
+		}
+	})
+
+	t.Run("bare worktrees skipped", func(t *testing.T) {
+		trees := []Worktree{
+			{Path: "/a", Branch: "main", IsBare: true},
+			{Path: "/b", Branch: "main"},
+		}
+		got := DetectSlugCollisions(trees)
+		if len(got) != 0 {
+			t.Errorf("DetectSlugCollisions() = %v, want empty (bare should be skipped)", got)
+		}
+	})
+
+	t.Run("empty input", func(t *testing.T) {
+		got := DetectSlugCollisions(nil)
+		if len(got) != 0 {
+			t.Errorf("DetectSlugCollisions(nil) = %v, want empty", got)
+		}
+	})
+}
+
 func TestParsePorcelain(t *testing.T) {
 	tests := []struct {
 		name    string

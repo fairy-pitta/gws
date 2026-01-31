@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -94,14 +95,16 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case StatusUpdateMsg:
 		m.rows = msg.Rows
 		// Refresh proxy status from state.
-		_ = m.store.WithLock(func() error {
+		if err := m.store.WithLock(func() error {
 			st, e := m.store.Load()
 			if e != nil {
 				return e
 			}
 			m.proxyRunning = st.Proxy.Status == "running" && st.Proxy.PID > 0 && process.IsProcessRunning(st.Proxy.PID)
 			return nil
-		})
+		}); err != nil {
+			log.Printf("warning: failed to load proxy state: %v", err)
+		}
 		if m.cursor >= len(m.rows) && len(m.rows) > 0 {
 			m.cursor = len(m.rows) - 1
 		}
@@ -206,10 +209,13 @@ func (m *Model) refreshStatus() tea.Msg {
 	sort.Strings(serviceNames)
 
 	var st *state.State
-	_ = m.store.WithLock(func() error {
-		st, err = m.store.Load()
-		return err
-	})
+	if err := m.store.WithLock(func() error {
+		var e error
+		st, e = m.store.Load()
+		return e
+	}); err != nil {
+		log.Printf("warning: failed to load state for refresh: %v", err)
+	}
 	if st == nil {
 		return StatusUpdateMsg{}
 	}
