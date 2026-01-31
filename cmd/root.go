@@ -23,7 +23,7 @@ var rootCmd = &cobra.Command{
 	SilenceErrors: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Skip repo/config detection for commands that don't need it.
-		if cmd.Name() == "init" || cmd.Name() == "version" {
+		if cmd.Name() == "init" || cmd.Name() == "version" || cmd.Name() == "completion" {
 			return nil
 		}
 
