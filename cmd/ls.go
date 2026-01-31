@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,14 @@ import (
 	"github.com/fairy-pitta/portree/internal/state"
 	"github.com/spf13/cobra"
 )
+
+type lsEntry struct {
+	Worktree string `json:"worktree"`
+	Service  string `json:"service"`
+	Port     int    `json:"port"`
+	Status   string `json:"status"`
+	PID      int    `json:"pid"`
+}
 
 var lsCmd = &cobra.Command{
 	Use:   "ls",
@@ -53,46 +62,74 @@ var lsCmd = &cobra.Command{
 		}
 		sort.Strings(serviceNames)
 
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-		_, _ = fmt.Fprintln(w, "WORKTREE\tSERVICE\tPORT\tSTATUS\tPID")
+		entries := buildLsEntries(trees, serviceNames, st)
 
-		for _, tree := range trees {
-			if tree.IsBare {
-				continue
-			}
-			branch := tree.Branch
-			if branch == "" {
-				branch = "(detached)"
-			}
-
-			for _, svcName := range serviceNames {
-				ss := state.GetServiceState(st, tree.Branch, svcName)
-				portStr := "—"
-				statusStr := "stopped"
-				pidStr := "—"
-
-				if ss != nil {
-					if ss.Port > 0 {
-						portStr = fmt.Sprintf("%d", ss.Port)
-					}
-					if ss.PID > 0 && process.IsProcessRunning(ss.PID) {
-						statusStr = "running"
-						pidStr = fmt.Sprintf("%d", ss.PID)
-					} else if ss.Status == "running" && ss.PID > 0 {
-						statusStr = "stopped" // stale
-					} else {
-						statusStr = ss.Status
-					}
-				}
-
-				_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", branch, svcName, portStr, statusStr, pidStr)
-			}
+		jsonFlag, _ := cmd.Flags().GetBool("json")
+		if jsonFlag {
+			return json.NewEncoder(os.Stdout).Encode(entries)
 		}
 
-		return w.Flush()
+		return printLsTable(entries)
 	},
 }
 
+func buildLsEntries(trees []git.Worktree, serviceNames []string, st *state.State) []lsEntry {
+	var entries []lsEntry
+	for _, tree := range trees {
+		if tree.IsBare {
+			continue
+		}
+		branch := tree.Branch
+		if branch == "" {
+			branch = "(detached)"
+		}
+
+		for _, svcName := range serviceNames {
+			e := lsEntry{
+				Worktree: branch,
+				Service:  svcName,
+				Status:   "stopped",
+			}
+
+			ss := state.GetServiceState(st, tree.Branch, svcName)
+			if ss != nil {
+				e.Port = ss.Port
+				if ss.PID > 0 && process.IsProcessRunning(ss.PID) {
+					e.Status = "running"
+					e.PID = ss.PID
+				} else if ss.Status == "running" && ss.PID > 0 {
+					e.Status = "stopped" // stale
+				} else {
+					e.Status = ss.Status
+				}
+			}
+
+			entries = append(entries, e)
+		}
+	}
+	return entries
+}
+
+func printLsTable(entries []lsEntry) error {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	_, _ = fmt.Fprintln(w, "WORKTREE\tSERVICE\tPORT\tSTATUS\tPID")
+
+	for _, e := range entries {
+		portStr := "—"
+		pidStr := "—"
+		if e.Port > 0 {
+			portStr = fmt.Sprintf("%d", e.Port)
+		}
+		if e.PID > 0 {
+			pidStr = fmt.Sprintf("%d", e.PID)
+		}
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", e.Worktree, e.Service, portStr, e.Status, pidStr)
+	}
+
+	return w.Flush()
+}
+
 func init() {
+	lsCmd.Flags().Bool("json", false, "Output in JSON format")
 	rootCmd.AddCommand(lsCmd)
 }
