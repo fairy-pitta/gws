@@ -6,12 +6,19 @@ Brief description of what this PR does and why.
 
 -
 
-## Test plan
+## How to test
 
-- [ ] Existing tests pass (`make test`)
+1.
+2.
+
+## Checklist
+
+- [ ] Tests pass (`go test ./... -race`)
+- [ ] Linting passes (`go vet ./...`)
 - [ ] New tests added (if applicable)
-- [ ] Linting passes (`make lint`)
+- [ ] Documentation updated (if applicable)
+- [ ] Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
 
 ## Related issues
 
-Closes #
+Fixes #

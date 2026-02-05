@@ -27,12 +27,17 @@ What you expected to happen.
 - OS: [e.g. macOS 15.2, Ubuntu 24.04]
 - portree version: [output of `portree version`]
 - Go version: [if built from source]
-- Git version: [output of `git --version`]
+
+## `portree doctor` output
+
+```
+[paste output of portree doctor here]
+```
 
 ## Logs / output
 
 ```
-Paste relevant output here.
+Paste relevant output here, or check ~/.portree/logs/
 ```
 
 ## Additional context
