@@ -3,6 +3,8 @@
 [![CI](https://github.com/fairy-pitta/portree/actions/workflows/ci.yaml/badge.svg)](https://github.com/fairy-pitta/portree/actions/workflows/ci.yaml)
 [![codecov](https://codecov.io/gh/fairy-pitta/portree/branch/main/graph/badge.svg)](https://codecov.io/gh/fairy-pitta/portree)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fairy-pitta/portree)](https://goreportcard.com/report/github.com/fairy-pitta/portree)
+[![Go Reference](https://pkg.go.dev/badge/github.com/fairy-pitta/portree.svg)](https://pkg.go.dev/github.com/fairy-pitta/portree)
+![Go Version](https://img.shields.io/github/go-mod/go-version/fairy-pitta/portree)
 
 **portree** は [git worktree](https://git-scm.com/docs/git-worktree) ごとに複数の dev server を自動管理する CLI ツールです。ポートの自動割り当て、環境変数の自動注入、`*.localhost` サブドメインルーティングによるリバースプロキシを提供します。
 
@@ -309,6 +311,16 @@ portree dash
 portree down --all
 # ✓ 4 services stopped
 ```
+
+---
+
+## プラットフォームサポート
+
+| プラットフォーム | ステータス | 備考 |
+| -------------- | --------- | ---- |
+| **macOS** | 完全対応 | 主要開発プラットフォーム |
+| **Linux** | 完全対応 | Ubuntu, Debian, Fedora でテスト済み |
+| **Windows** | 実験的 | 基本機能は動作。ファイルロックは代替実装を使用。問題があれば報告をお願いします |
 
 ---
 

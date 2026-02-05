@@ -3,6 +3,8 @@
 [![CI](https://github.com/fairy-pitta/portree/actions/workflows/ci.yaml/badge.svg)](https://github.com/fairy-pitta/portree/actions/workflows/ci.yaml)
 [![codecov](https://codecov.io/gh/fairy-pitta/portree/branch/main/graph/badge.svg)](https://codecov.io/gh/fairy-pitta/portree)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fairy-pitta/portree)](https://goreportcard.com/report/github.com/fairy-pitta/portree)
+[![Go Reference](https://pkg.go.dev/badge/github.com/fairy-pitta/portree.svg)](https://pkg.go.dev/github.com/fairy-pitta/portree)
+![Go Version](https://img.shields.io/github/go-mod/go-version/fairy-pitta/portree)
 
 **portree** automatically manages multiple dev servers per [git worktree](https://git-scm.com/docs/git-worktree) — with automatic port allocation, environment variable injection, and `*.localhost` subdomain routing via reverse proxy.
 
@@ -27,7 +29,7 @@
 ### 1. Install
 
 ```bash
-# Homebrew
+# Homebrew (available after first release)
 brew install fairy-pitta/tap/portree
 
 # From source
@@ -375,6 +377,16 @@ portree completion powershell > portree.ps1
 - Verify your browser resolves `*.localhost` — modern browsers do this per RFC 6761.
 - Check that the target service is actually running with `portree ls`.
 - The proxy routes based on the `Host` header subdomain, so access via `http://<branch-slug>.localhost:<proxy_port>`.
+
+---
+
+## Platform Support
+
+| Platform | Status | Notes |
+| -------- | ------ | ----- |
+| **macOS** | Fully supported | Primary development platform |
+| **Linux** | Fully supported | Tested on Ubuntu, Debian, Fedora |
+| **Windows** | Experimental | Basic functionality works; file locking uses alternative implementation. Please report issues. |
 
 ---
 
