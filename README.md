@@ -12,6 +12,12 @@
 
 ---
 
+## Demo
+
+![portree workflow demo](./demo/demo-workflow.gif)
+
+---
+
 ## Features
 
 - **Multi-service** — Define frontend, backend, and any number of services per worktree
@@ -28,20 +34,24 @@
 
 ### 1. Install
 
+![Install demo](./demo/demo-install.gif)
+
 ```bash
-# Homebrew (available after first release)
+# Homebrew
 brew install fairy-pitta/tap/portree
 
-# From source
+# Go install
 go install github.com/fairy-pitta/portree@latest
 
-# Or build locally
+# Or build from source
 git clone https://github.com/fairy-pitta/portree.git
 cd portree
 make build
 ```
 
 ### 2. Initialize
+
+![Init demo](./demo/demo-init.gif)
 
 ```bash
 cd your-project
@@ -226,6 +236,8 @@ module.exports = {
 ---
 
 ## TUI Dashboard
+
+![TUI Dashboard demo](./demo/demo-tui.gif)
 
 Launch with `portree dash`:
 
