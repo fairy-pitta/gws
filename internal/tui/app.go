@@ -153,7 +153,7 @@ func (m *Model) View() string {
 	}
 	table := renderTable(m.rows, m.cursor, tableWidth)
 	proxyLine := renderProxyStatus(m.proxyRunning, m.proxyPorts)
-	help := renderHelp(m.keys)
+	help := renderHelp(m.keys, tableWidth)
 
 	content := fmt.Sprintf("%s\n\n%s\n%s\n%s", title, table, proxyLine, help)
 

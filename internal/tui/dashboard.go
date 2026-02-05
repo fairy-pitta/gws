@@ -107,12 +107,44 @@ func renderProxyStatus(running bool, ports []int) string {
 	return proxyStoppedStyle.Render("Proxy: ○ stopped")
 }
 
-// renderHelp renders the key binding help bar.
-func renderHelp(keys KeyMap) string {
-	parts := []string{
-		"[s] start", "[x] stop", "[r] restart", "[o] open in browser",
-		"[a] start all", "[X] stop all", "[p] toggle proxy",
-		"[l] view logs", "[q] quit",
+// renderHelp renders the key binding help bar with automatic wrapping.
+func renderHelp(keys KeyMap, width int) string {
+	items := []string{
+		"[s] start", "[x] stop", "[r] restart", "[o] open", "[l] logs",
+		"[a] all start", "[X] all stop", "[p] proxy", "[q] quit",
 	}
-	return helpStyle.Render(strings.Join(parts, "  "))
+
+	// Account for border padding (~6 chars)
+	maxWidth := width - 6
+	if maxWidth < 40 {
+		maxWidth = 40
+	}
+
+	var lines []string
+	var currentLine []string
+	currentLen := 0
+	separator := "  "
+
+	for _, item := range items {
+		itemLen := len(item)
+		newLen := currentLen + itemLen
+		if len(currentLine) > 0 {
+			newLen += len(separator)
+		}
+
+		if newLen > maxWidth && len(currentLine) > 0 {
+			lines = append(lines, helpStyle.Render(strings.Join(currentLine, separator)))
+			currentLine = []string{item}
+			currentLen = itemLen
+		} else {
+			currentLine = append(currentLine, item)
+			currentLen = newLen
+		}
+	}
+
+	if len(currentLine) > 0 {
+		lines = append(lines, helpStyle.Render(strings.Join(currentLine, separator)))
+	}
+
+	return strings.Join(lines, "\n")
 }
