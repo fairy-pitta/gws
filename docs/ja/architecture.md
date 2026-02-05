@@ -1,16 +1,14 @@
-# Architecture
+# アーキテクチャ
 
-[日本語版はこちら](./ja/architecture.md)
+## 概要
 
-## Overview
-
-portree is a Git Worktree Server Manager that enables running multiple development servers across git worktrees with automatic port allocation and subdomain-based routing.
+portree は Git Worktree Server Manager で、複数の git worktree にまたがる開発サーバーを、自動ポート割り当てとサブドメインベースのルーティングで管理します。
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         User                                     │
+│                         ユーザー                                 │
 ├─────────────────────────────────────────────────────────────────┤
-│  CLI Commands          │  TUI Dashboard      │  Browser          │
+│  CLI コマンド           │  TUI ダッシュボード │  ブラウザ         │
 │  (portree up/down/ls)  │  (portree dash)     │  (*.localhost)    │
 └───────────┬────────────┴────────┬───────────┴────────┬──────────┘
             │                     │                    │
@@ -35,87 +33,87 @@ portree is a Git Worktree Server Manager that enables running multiple developme
 └─────────────┴─────────────┴─────────────┴─────────────┴──────────┘
 ```
 
-## Package Responsibilities
+## パッケージの責務
 
 ### cmd/
-CLI entry points using Cobra. Each file corresponds to a subcommand.
+Cobra を使った CLI エントリーポイント。各ファイルがサブコマンドに対応。
 
 ### internal/config/
-Loads and parses `.portree.toml` configuration.
+`.portree.toml` 設定ファイルの読み込みとパース。
 
 ### internal/git/
-Git worktree operations: list, add, remove, detect current worktree.
+Git worktree 操作: 一覧取得、追加、削除、現在の worktree 検出。
 
 ### internal/process/
-Process lifecycle management:
-- `Runner` - Starts a single service process
-- `Manager` - Coordinates multiple services across worktrees
+プロセスライフサイクル管理:
+- `Runner` - 単一のサービスプロセスを起動
+- `Manager` - 複数 worktree のサービスを統括
 
 ### internal/port/
-Port allocation using FNV-32a hashing with linear probing fallback.
+FNV-32a ハッシュを使ったポート割り当て（衝突時は linear probing）。
 
 ### internal/proxy/
-HTTP reverse proxy for subdomain-based routing.
+サブドメインベースルーティングの HTTP リバースプロキシ。
 
 ### internal/state/
-JSON file-based state persistence with file locking.
+ファイルロック付き JSON ファイルベースの状態永続化。
 
 ### internal/tui/
-Bubble Tea-based terminal UI dashboard.
+Bubble Tea ベースのターミナル UI ダッシュボード。
 
 ### internal/browser/
-Cross-platform browser opening.
+クロスプラットフォームのブラウザ起動。
 
 ### internal/logging/
-Structured logging utilities.
+構造化ロギングユーティリティ。
 
-## Data Flow
+## データフロー
 
-### 1. Configuration Loading
+### 1. 設定の読み込み
 ```
 .portree.toml → config.Load() → Config{Services, ProxyPorts}
 ```
 
-### 2. Worktree Discovery
+### 2. Worktree の検出
 ```
 git worktree list → git.ListWorktrees() → []Worktree{Branch, Path}
 ```
 
-### 3. Port Allocation
+### 3. ポート割り当て
 ```
-(branch, service) → port.Allocate() → unique port number
+(branch, service) → port.Allocate() → ユニークなポート番号
                          │
                          ├── FNV32(branch:service) % range
-                         ├── Check if port is free
-                         └── Linear probe if collision
+                         ├── ポートが空いているか確認
+                         └── 衝突時は linear probe
 ```
 
-### 4. Service Start
+### 4. サービス起動
 ```
 Config + Port → Runner.Start() → sh -c "command"
                     │                    │
-                    ├── Set PORT env     │
-                    ├── Set PT_* env     │
-                    └── Track PID ───────┴──→ state.json
+                    ├── PORT 環境変数設定 │
+                    ├── PT_* 環境変数設定 │
+                    └── PID 追跡 ────────┴──→ state.json
 ```
 
-### 5. Proxy Routing
+### 5. プロキシルーティング
 ```
 http://feature-auth.localhost:3000
          │
          ▼
-    Extract slug: "feature-auth"
+    スラッグ抽出: "feature-auth"
          │
          ▼
-    Resolve: slug + service → port 3150
+    解決: slug + service → ポート 3150
          │
          ▼
-    Proxy to: http://127.0.0.1:3150
+    プロキシ先: http://127.0.0.1:3150
 ```
 
-## State File Structure
+## 状態ファイルの構造
 
-Location: `~/.portree/state.json`
+場所: `~/.portree/state.json`
 
 ```json
 {
@@ -144,11 +142,11 @@ Location: `~/.portree/state.json`
 }
 ```
 
-## Key Design Decisions
+## 主要な設計判断
 
-See [ADR documents](./adr/) for detailed rationale:
+詳細な根拠は [ADR ドキュメント](./adr/) を参照:
 
-- [ADR-001: Process Management](./adr/001-process-management.md) - Direct process spawning vs Docker
-- [ADR-002: Port Allocation](./adr/002-port-allocation.md) - Hash-based deterministic allocation
-- [ADR-003: Reverse Proxy](./adr/003-reverse-proxy.md) - *.localhost subdomain routing
-- [ADR-004: State Management](./adr/004-state-management.md) - JSON + flock approach
+- [ADR-001: プロセス管理](./adr/001-process-management.md) - 直接プロセス起動 vs Docker
+- [ADR-002: ポート割り当て](./adr/002-port-allocation.md) - ハッシュベースの決定論的割り当て
+- [ADR-003: リバースプロキシ](./adr/003-reverse-proxy.md) - *.localhost サブドメインルーティング
+- [ADR-004: 状態管理](./adr/004-state-management.md) - JSON + flock アプローチ

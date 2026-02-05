@@ -1,5 +1,7 @@
 # Contributing to portree
 
+[日本語版はこちら](CONTRIBUTING.ja.md)
+
 Thank you for your interest in contributing to portree!
 
 ## Development Setup
